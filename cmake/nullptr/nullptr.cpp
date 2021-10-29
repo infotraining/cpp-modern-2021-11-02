@@ -6,7 +6,17 @@
 using namespace std;
 using namespace Catch::Matchers;
 
-TEST_CASE("Test")
+void foo(int* ptr)
 {
-    REQUIRE(1 == 1);
+    std::cout << "foo(int*)\n";
+}
+
+void foo(int)
+{
+    std::cout << "foo(int)\n";
+}
+
+TEST_CASE("NULL is imperfect null pointer")
+{
+    foo(NULL);
 }

@@ -6,7 +6,15 @@
 using namespace std;
 using namespace Catch::Matchers;
 
-TEST_CASE("Test")
+enum GuitarType { strat = 1, tele, les_paul, };
+
+TEST_CASE("enum types in C++98")
 {
-    REQUIRE(1 == 1);
+    GuitarType guitar = strat;
+
+    int value = guitar;
+
+    guitar = static_cast<GuitarType>(2);
+
+    REQUIRE(guitar == tele);
 }

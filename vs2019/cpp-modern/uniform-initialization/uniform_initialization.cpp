@@ -6,7 +6,17 @@
 using namespace std;
 using namespace Catch::Matchers;
 
-TEST_CASE("Test")
+TEST_CASE("initialization syntax in C++98")
 {
-    REQUIRE(1 == 1);
+    SECTION("simple types")
+    {
+        int x = 10;
+        int y(10);
+
+        REQUIRE(x == y);
+
+        int c();
+
+        REQUIRE(c == 0);
+    }
 }
