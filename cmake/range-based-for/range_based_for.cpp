@@ -69,6 +69,7 @@ TEST_CASE("range-based-for")
         for (const auto& item : {"one"s, "two"s, "three"s})
         {
             std::cout << item << " ";
+
         }
         std::cout << "\n";
     }
@@ -122,5 +123,47 @@ TEST_CASE("range-based-for for custom type")
     for(const Point& pt : t1)
     {
         std::cout << "(" << pt.x << ", " << pt.y << ")\n";
+    }
+}
+
+TEST_CASE("initializer list")
+{
+    std::vector<int> vec = { 1, 2, 3, 4 }; // std::initializer_list<int>
+
+    auto il = {1, 2, 3};
+
+    REQUIRE(il.size() == 3);
+
+    for(auto it = il.begin(); it != il.end(); ++it)
+    {
+        std::cout << *it << "\n";
+    }
+}
+
+class Data
+{
+    std::vector<int> data_;
+public:
+    Data(std::initializer_list<int> il) : data_(il)
+    {
+    }
+
+    using iterator = std::vector<int>::iterator;
+    using const_iterator = std::vector<int>::const_iterator;
+
+    iterator begin() { return data_.begin(); }
+    const_iterator begin() const { return data_.begin(); }
+    iterator end() { return data_.end(); }
+    const_iterator end() const { return data_.end(); }
+};
+
+
+TEST_CASE("using initializer_list for class")
+{
+    Data d1 = {1, 2, 3, 4, 5};
+
+    for(const auto& item : d1)
+    {
+        std::cout << item << "\n";
     }
 }
