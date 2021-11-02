@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <type_traits>
 #include <vector>
@@ -14,7 +15,7 @@ using TODO = void;
 
 int main()
 {
-
+/* uncomment a code
     auto a1 = x;
     static_assert(is_same<TODO, decltype(a1)>::value, "Error");
 
@@ -65,6 +66,7 @@ int main()
 
     const auto a16 = vec[0];
     static_assert(is_same<TODO, decltype(a16)>::value, "Error");
+*/
 
     // auto&& a17 = 7.5;
     // static_assert(is_same<TODO, decltype(a17)>::value, "Error");

@@ -16,7 +16,29 @@ void foo(int)
     std::cout << "foo(int)\n";
 }
 
-TEST_CASE("NULL is imperfect null pointer")
+void foo(nullptr_t)
 {
-    foo(NULL);
+    std::cout << "foo(nullptr_t)\n";
+}
+
+// TEST_CASE("NULL is imperfect null pointer")
+// {
+//     foo(NULL);
+// }
+
+TEST_CASE("nullptr is better NULL")
+{
+    foo(nullptr);
+
+    int* ptr1 = nullptr;
+    int* ptr2{}; // universal init syntax - since C++11
+
+    foo(ptr1);
+
+    REQUIRE(ptr1 == nullptr);
+
+    if (ptr2 != nullptr)
+    {
+        std::cout << *ptr2 << "\n";
+    }
 }
