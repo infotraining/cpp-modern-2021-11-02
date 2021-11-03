@@ -163,9 +163,17 @@ decltype(auto) get_value(T& dict, const std::string& key) // -> float&
     return dict.at(key);
 }
 
-TEST_CASE("temp")
+template <typename T>
+auto& get_value(T& container, size_t index)
+{
+    return container[index];
+}
+
+TEST_CASE("auto vs. decltype(auto)")
 {
     std::map<std::string, float> math_vars = { {"pi", 3.14}, {"e", 2.72} };
+    get_value(math_vars, "pi") = 3.1415f;
 
-    get_value(math_vars, "pi") = 3.1415;
+    std::vector<bool> vec = {1, 0, 1, 1};
+    get_value(vec, 1) = 1;
 }

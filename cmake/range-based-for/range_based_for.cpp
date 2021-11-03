@@ -69,7 +69,6 @@ TEST_CASE("range-based-for")
         for (const auto& item : {"one"s, "two"s, "three"s})
         {
             std::cout << item << " ";
-
         }
         std::cout << "\n";
     }
@@ -118,9 +117,9 @@ struct Triangle
 
 TEST_CASE("range-based-for for custom type")
 {
-    Triangle t1{ { {1, 2},{2, 3}, {4,  5} } };
+    Triangle t1 {{{1, 2}, {2, 3}, {4, 5}}};
 
-    for(const Point& pt : t1)
+    for (const Point& pt : t1)
     {
         std::cout << "(" << pt.x << ", " << pt.y << ")\n";
     }
@@ -128,13 +127,13 @@ TEST_CASE("range-based-for for custom type")
 
 TEST_CASE("initializer list")
 {
-    std::vector<int> vec = { 1, 2, 3, 4 }; // std::initializer_list<int>
+    std::vector<int> vec = {1, 2, 3, 4}; // std::initializer_list<int>
 
     auto il = {1, 2, 3};
 
     REQUIRE(il.size() == 3);
 
-    for(auto it = il.begin(); it != il.end(); ++it)
+    for (auto it = il.begin(); it != il.end(); ++it)
     {
         std::cout << *it << "\n";
     }
@@ -143,8 +142,10 @@ TEST_CASE("initializer list")
 class Data
 {
     std::vector<int> data_;
+
 public:
-    Data(std::initializer_list<int> il) : data_(il)
+    Data(std::initializer_list<int> il)
+        : data_(il)
     {
     }
 
@@ -157,12 +158,11 @@ public:
     const_iterator end() const { return data_.end(); }
 };
 
-
 TEST_CASE("using initializer_list for class")
 {
     Data d1 = {1, 2, 3, 4, 5};
 
-    for(const auto& item : d1)
+    for (const auto& item : d1)
     {
         std::cout << item << "\n";
     }
