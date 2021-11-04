@@ -316,7 +316,7 @@ namespace LegacyCode
 {
     DataSet* create_data_set()
     {
-        DataSet ds* = new DataSet {"data-set-one", {54, 6, 34, 235, 64356, 235, 23}};
+        DataSet* ds = new DataSet {"data-set-one", {54, 6, 34, 235, 64356, 235, 23}};
 
         return ds;
     }
@@ -343,4 +343,75 @@ TEST_CASE("DataSet")
         std::cout << item << " ";
     }
     std::cout << "\n";
+
+    const DataSet const_ds {"const", {1, 2, 3}};
+    DataSet ds3 = std::move(const_ds);
+}
+
+namespace AlternativeTake
+{
+    class DataSet
+    {
+        std::string name_;
+        std::vector<int> data_;
+
+    public:
+        DataSet() = default;
+
+        DataSet(const std::string& name, std::initializer_list<int> list)
+            : name_ {name}
+            , data_ {list}
+        {
+        }
+
+        // DataSet(const DataSet& ) = default;
+        // DataSet& operator=(const DataSet&) = default;
+
+        // DataSet(DataSet&&) = default;
+        // DataSet& operator=(DataSet&&) = default;
+
+        // ~DataSet() {}
+
+        std::string name() const
+        {
+            return name_;
+        }
+
+        using iterator = std::vector<int>::iterator;
+        using const_iterator = std::vector<int>::const_iterator;
+
+        iterator begin()
+        {
+            return data_.begin();
+        }
+
+        iterator end()
+        {
+            return data_.end();
+        }
+
+        const_iterator begin() const
+        {
+            return data_.begin();
+        }
+
+        const_iterator end() const
+        {
+            return data_.end();
+        }
+    };
+}
+
+TEST_CASE("default copy & move")
+{
+    AlternativeTake::DataSet ds{"ds", {1, 2, 3, 4, 5}};
+
+    //AlternativeTake::DataSet backup = ds; // copy
+
+    AlternativeTake::DataSet target = std::move(ds);
+
+    REQUIRE(ds.name() == ""s);
+
+    static_assert(std::is_copy_constructible_v<DataSet>);
+    static_assert(std::is_move_constructible_v<UniquePtr<Gadget>>);
 }
