@@ -9,7 +9,17 @@
 
 using namespace std;
 
-// TODO
+template<class T>
+auto find_null(T& container)
+{
+	auto it = std::begin(container);
+	for (; it != std::end(container); ++it)
+	{
+		if (*it == nullptr)
+			break;
+	}
+	return it;
+}
 
 TEST_CASE("find_null description")
 {

@@ -164,7 +164,7 @@ decltype(auto) get_value(T& dict, const std::string& key) // -> float&
 }
 
 template <typename T>
-auto& get_value(T& container, size_t index)
+decltype(auto) get_value(T& container, size_t index)
 {
     return container[index];
 }
@@ -176,4 +176,6 @@ TEST_CASE("auto vs. decltype(auto)")
 
     std::vector<bool> vec = {1, 0, 1, 1};
     get_value(vec, 1) = 1;
+
+    REQUIRE(vec[1] == true);
 }
