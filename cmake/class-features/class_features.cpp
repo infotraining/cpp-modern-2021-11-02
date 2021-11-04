@@ -6,11 +6,51 @@
 using namespace std;
 using namespace Catch::Matchers;
 
+struct Person
+{
+    inline static int id_gen{};
+    
+    int id{++id_gen};
+    uint8_t age{};
+    std::string name{"not-set"};
+
+    Person() = default;
+    explicit Person(uint8_t age) : age{age}
+    {}
+    Person(const Person&) = delete;
+    Person& operator=(const Person&) = delete;
+};
+
+template <typename T>
+int calculate(T arg) = delete;
+
+template<>
+int32_t calculate(int32_t x)
+{
+    std::cout << "calculate(x: " << x << ")\n";
+
+    return x;
+}
+
+TEST_CASE("default & delete")
+{
+    Person p1{42};
+    REQUIRE(p1.name == "not-set"s);
+
+
+    //Person p2 = p1; // Person is non-copyable
+
+    calculate(42);
+    //calculate(3.14);
+    //calculate(42ULL);
+}
+
+
 class IGadget
 {
 public:
     virtual void use() const = 0;
-    virtual ~IGadget() { } // TODO: replace user provided implementation with default
+    virtual ~IGadget() = default;
 };
 
 class Gadget : public IGadget
@@ -19,15 +59,18 @@ class Gadget : public IGadget
     std::string name_ = "unknown";
 
 public:
-    // TODO: define default constructor
+    Gadget() = default;
 
     Gadget(int id, std::string name)
-        : id_ {id}
-        , name_ {std::move(name)}
+        : id_{id}
+        , name_{std::move(name)}
     {
     }
 
-    // TODO: delegating constructor
+    Gadget(int id) : Gadget{id, "not-set"s} // delegation to another constructor
+    {
+        name_.append("!!!");
+    }
 
     int id() const
     {
@@ -39,7 +82,7 @@ public:
         return name_;
     }
 
-    void use() const // TODO: use override
+    void use() const override
     {
         std::cout << "Using gadget: " << id() << " - " << name() << "\n";
     }
@@ -48,35 +91,44 @@ public:
 class SuperGadget : public Gadget
 {
 public:
-    // TODO: inherit constructors from Gadget
+    using Gadget::Gadget; // inheritance of all constructors
 
     SuperGadget(int id)
         : Gadget {id, "not-set(super gadget)"}
     {
     }
 
-    void use() // TODO: control overriding a virtual function
+    void use() const override final
     {
         std::cout << "Using super gadget: " << id() << " - " << name() << "\n";
     }
 };
 
-class HyperGadget /* TODO: mark class as final specialization */ : public SuperGadget
+class HyperGadget final : public SuperGadget
 {
 public:
-    // TODO: inherit constructors from SuperGadget
+    using SuperGadget::SuperGadget;
 
-    void use() const // TODO: control overriding a virtual function
-    {
-        std::cout << "Using hyper gadget: " << id() << " - " << name() << "\n";
-    }
+    HyperGadget(int) = delete;
+
+    // void use() const override
+    // {
+    //     std::cout << "Using hyper gadget: " << id() << " - " << name() << "\n";
+    // }
 };
 
-// TEST_CASE("inheritance of constructors")
-// {
-//     SuperGadget sg1 {1, "super-gadget"};
-//     SuperGadget sg2 {4};
+//class IllegalGadget : HyperGadget{};
 
-//     Gadget& g_ref = sg1;
-//     g_ref.use();
-// }
+TEST_CASE("default constructor")
+{
+    Gadget g{};
+}
+
+TEST_CASE("inheritance of constructors")
+{
+    SuperGadget sg1 {1, "super-gadget"};
+    SuperGadget sg2 {4};
+
+    Gadget& g_ref = sg1;
+    g_ref.use();
+}
