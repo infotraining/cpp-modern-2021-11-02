@@ -132,7 +132,7 @@ TEST_CASE("initialization syntax in modern C++")
     }
 }
 
-TEST_CASE("beware - containers have constructors with initializer_lists")
+TEST_CASE("beware - containers have constructors with initializer_list")
 {
     std::vector<int> vec1{5, 2}; // std::vector<int>(std::initializer_list<int>)
     REQUIRE(vec1[0] == 5);
@@ -144,4 +144,6 @@ TEST_CASE("beware - containers have constructors with initializer_lists")
 
     std::vector<std::string> words{2, "text"s};
     REQUIRE(words == std::vector{"text"s, "text"s});
+
+    std::vector<int> empty{};
 }

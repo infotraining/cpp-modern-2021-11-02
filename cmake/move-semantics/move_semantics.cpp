@@ -8,15 +8,6 @@
 using namespace std;
 using namespace Catch::Matchers;
 
-TEST_CASE("lvalue vs. rvalue")
-{
-    int x;
-    x = 10;
-
-    // std::string{} = "text";
-    auto text = std::string {};
-}
-
 string full_name(const string& first_name, const string& last_name)
 {
     return first_name + " " + last_name;
@@ -76,6 +67,9 @@ TEST_CASE("reference binding")
         // string&& ref_name = name; // ERROR - cannot bind lvalue to rvalue ref
     }
 }
+
+////////////////////////////////////////////////
+// simplified implementation of unique_ptr - only moveable type
 
 template <typename T>
 class UniquePtr
@@ -205,6 +199,9 @@ TEST_CASE("move semantics - UniquePtr")
     use_and_destroy(create_gadget());
 }
 
+////////////////////////////////////////////////////////////
+// DataSet - class with copy & move semantics (user provided implementation)
+
 class DataSet
 {
     std::string name_;
@@ -221,13 +218,15 @@ public:
     {
         data_ = new int[list.size()];
         std::copy(list.begin(), list.end(), data_);
+
+        std::cout << "DataSet(" << name_ << ")\n";
     }
 
     DataSet(const DataSet& other)
         : name_(other.name_)
         , size_(other.size_)
     {
-        std::cout << "DataSet(cc)\n";
+        std::cout << "DataSet(" << name_ << ": cc)\n";
         data_ = new int[size_];
         std::copy(other.begin(), other.end(), data_);
     }
@@ -243,7 +242,7 @@ public:
             data_ = new int[size_];
             std::copy(other.begin(), other.end(), data_);
 
-            std::cout << "DataSet=(cc)\n";
+            std::cout << "DataSet=(" << name_ << ": cc)\n";
         }
 
         return *this;
@@ -257,7 +256,7 @@ public:
         other.size_ = 0;
         other.data_ = nullptr;
 
-        std::cout << "DataSet(mv)\n";
+        std::cout << "DataSet(" << name_ << ": mv)\n";
     }
 
     DataSet& operator=(DataSet&& other)
@@ -274,7 +273,7 @@ public:
             data_ = other.data_;
             other.data_ = nullptr;
 
-            std::cout << "DataSet=(mv)\n";
+            std::cout << "DataSet=(" << name_ << ": mv)\n";
         }
         return *this;
     }
@@ -348,7 +347,7 @@ TEST_CASE("DataSet")
     DataSet ds3 = std::move(const_ds);
 }
 
-namespace AlternativeTake
+namespace ValueSemanticsTake
 {
     class DataSet
     {
@@ -404,14 +403,24 @@ namespace AlternativeTake
 
 TEST_CASE("default copy & move")
 {
-    AlternativeTake::DataSet ds{"ds", {1, 2, 3, 4, 5}};
+    ValueSemanticsTake::DataSet ds {"ds", {1, 2, 3, 4, 5}};
 
-    //AlternativeTake::DataSet backup = ds; // copy
+    ValueSemanticsTake::DataSet backup = ds; // copy
 
-    AlternativeTake::DataSet target = std::move(ds);
+    ValueSemanticsTake::DataSet target = std::move(ds); // explicit move
 
     REQUIRE(ds.name() == ""s);
 
     static_assert(std::is_copy_constructible_v<DataSet>);
     static_assert(std::is_move_constructible_v<UniquePtr<Gadget>>);
+}
+
+TEST_CASE("noexcept")
+{
+    std::vector<DataSet> datasets;
+
+    datasets.push_back(DataSet {"ds1", {1, 2, 3}});
+    datasets.push_back(DataSet {"ds2", {1, 2, 3}});
+    datasets.push_back(DataSet {"ds3", {1, 2, 3}});
+    datasets.push_back(DataSet {"ds4", {1, 2, 3}});
 }
