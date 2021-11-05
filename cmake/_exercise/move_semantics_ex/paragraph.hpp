@@ -41,6 +41,19 @@ namespace LegacyCode
             return *this;
         }
 
+        Paragraph(Paragraph&& p) : buffer_{p.buffer_}
+        {
+            p.buffer_ = nullptr;
+        }
+
+        Paragraph& operator=(Paragraph&& p) 
+        {
+            Paragraph temp(std::move(p));
+            swap(temp);
+            
+            return *this;
+        }
+
         void set_paragraph(const char* txt)
         {
             std::strcpy(buffer_, txt);

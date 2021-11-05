@@ -23,3 +23,14 @@ TEST_CASE("Moving text shape")
     REQUIRE(mtxt.text() == string("text"));
     REQUIRE(txt.text() == string());
 }
+
+TEST_CASE("swap for Text")
+{
+    Text t1{1, 2, "AAA"};
+    Text t2{4, 5, "BBB"};
+
+    std::swap(t1, t2);
+
+    REQUIRE(t1.text() == "BBB"s);
+    REQUIRE(t2.text() == "AAA"s);
+}
