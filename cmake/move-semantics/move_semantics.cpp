@@ -254,13 +254,13 @@ public:
         return *this;
     }
 
-    DataSet(DataSet&& other)
-        : name_ {std::move(other.name_)}
-        , data_ {other.data_}
-        , size_ {other.size_}
+    DataSet(DataSet&& other) noexcept
+        : name_ {std::move(other.name_)} // noexcept
+        , data_ {other.data_} // noexcept
+        , size_ {other.size_} // noexcept
     {
-        other.size_ = 0;
-        other.data_ = nullptr;
+        other.size_ = 0; // noexcept
+        other.data_ = nullptr; // noexcept
 
         std::cout << "DataSet(" << name_ << ": mv)\n";
     }
@@ -557,4 +557,17 @@ TEST_CASE("auto&&")
     auto&& a1 = x; // int&
 
     auto&& a2 = 10; // int&&
+}
+
+TEST_CASE("vector + noexcept")
+{
+    std::cout << "\n\n-------------------\n";
+
+    std::vector<DataSet> datasets;
+
+    datasets.push_back(DataSet{"ds1", {1, 2, 3}});
+    datasets.push_back(DataSet{"ds2", {1, 2, 3}});
+    datasets.push_back(DataSet{"ds3", {1, 2, 3}});
+    datasets.push_back(DataSet{"ds4", {1, 2, 3}});
+    datasets.push_back(DataSet{"ds5", {1, 2, 3}});
 }

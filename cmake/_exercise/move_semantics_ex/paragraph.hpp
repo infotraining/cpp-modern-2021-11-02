@@ -12,7 +12,7 @@ namespace LegacyCode
         char* buffer_;
 
     protected:
-        void swap(Paragraph& p)
+        void swap(Paragraph& p) noexcept
         {
             std::swap(buffer_, p.buffer_);
         }
@@ -33,7 +33,7 @@ namespace LegacyCode
             std::strcpy(buffer_, txt);
         }
 
-        Paragraph& operator=(const Paragraph& p)
+        Paragraph& operator=(const Paragraph& p) 
         {
             Paragraph temp(p);
             swap(temp);
@@ -41,12 +41,12 @@ namespace LegacyCode
             return *this;
         }
 
-        Paragraph(Paragraph&& p) : buffer_{p.buffer_}
+        Paragraph(Paragraph&& p) noexcept : buffer_{p.buffer_}
         {
             p.buffer_ = nullptr;
         }
 
-        Paragraph& operator=(Paragraph&& p) 
+        Paragraph& operator=(Paragraph&& p) noexcept
         {
             Paragraph temp(std::move(p));
             swap(temp);
