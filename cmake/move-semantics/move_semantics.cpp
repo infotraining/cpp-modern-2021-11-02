@@ -181,9 +181,15 @@ void use_and_destroy(UniquePtr<Gadget> ptr)
     ptr->use();
 }
 
+template <typename T, typename... TArgs>
+UniquePtr<T> MakeUnique(TArgs&&... args)
+{
+    return UniquePtr<T>{new T(std::forward<TArgs>(args)...)};
+}
+
 TEST_CASE("move semantics - UniquePtr")
 {
-    UniquePtr<Gadget> pg1 {new Gadget {1, "ipad"}};
+    UniquePtr<Gadget> pg1 = MakeUnique<Gadget>(1, "ipad");
     pg1->use();
 
     pg1 = UniquePtr<Gadget> {new Gadget(2, "smartwatch")}; // move assignment
@@ -212,8 +218,8 @@ public:
     using iterator = int*;
     using const_iterator = const int*;
 
-    DataSet(const std::string& name, std::initializer_list<int> list)
-        : name_ {name}
+    DataSet(std::string name, std::initializer_list<int> list)
+        : name_ {std::move(name)}
         , size_ {list.size()}
     {
         data_ = new int[list.size()];
@@ -231,19 +237,19 @@ public:
         std::copy(other.begin(), other.end(), data_);
     }
 
+    void swap(DataSet& other)
+    {
+        name_.swap(other.name_);
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+    }
+
     DataSet& operator=(const DataSet& other)
     {
-        if (this != &other)
-        {
-            delete[] data_;
+        DataSet temp(other);
+        swap(temp);
 
-            name_ = other.name_;
-            size_ = other.size_;
-            data_ = new int[size_];
-            std::copy(other.begin(), other.end(), data_);
-
-            std::cout << "DataSet=(" << name_ << ": cc)\n";
-        }
+        std::cout << "DataSet=(" << name_ << ": cc)\n";
 
         return *this;
     }
@@ -357,8 +363,8 @@ namespace ValueSemanticsTake
     public:
         DataSet() = default;
 
-        DataSet(const std::string& name, std::initializer_list<int> list)
-            : name_ {name}
+        DataSet(std::string name, std::initializer_list<int> list)
+            : name_ {std::move(name)}
             , data_ {list}
         {
         }
@@ -415,12 +421,140 @@ TEST_CASE("default copy & move")
     static_assert(std::is_move_constructible_v<UniquePtr<Gadget>>);
 }
 
-TEST_CASE("noexcept")
+template <typename T>
+class Queue
 {
-    std::vector<DataSet> datasets;
+    std::deque<T> q_;
 
-    datasets.push_back(DataSet {"ds1", {1, 2, 3}});
-    datasets.push_back(DataSet {"ds2", {1, 2, 3}});
-    datasets.push_back(DataSet {"ds3", {1, 2, 3}});
-    datasets.push_back(DataSet {"ds4", {1, 2, 3}});
+public:
+    Queue() = default;
+
+    void push(const T& item)
+    {
+        q_.push_front(item);
+    }
+
+    void push(T&& item)
+    {
+        q_.push_front(std::move(item));
+    }
+
+    // template <typename TArg>
+    // void push(TArg&& item)
+    // {
+    //     q_.push_front(std::forward<TArg>(item));
+    // }
+
+    template <typename... TArgs>
+    void emplace(TArgs&&... args)
+    {
+        q_.emplace_front(std::forward<TArgs>(args)...);
+    }
+};
+
+TEST_CASE("Queue & move semantics")
+{
+    std::cout << "\n\n\n--------------\n";
+
+    Queue<DataSet> q;
+    std::string name = "ds1";
+    DataSet ds1 {std::move(name), {1, 2, 4, 3}};
+    q.push(ds1); // copy
+    q.push(DataSet {"ds2", {543, 645, 64, 665}}); // implicit move
+    q.push(std::move(ds1)); // explicit move
+
+    Queue<Gadget> qg;
+    qg.push(Gadget{1, "ipad"s});
+    qg.emplace(1, "ipad"s);
+}
+
+////////////////////////////////////////////////////////
+///  PERFECT FORWARDING
+
+void have_fun(Gadget& g)
+{
+    puts(__FUNCSIG__);
+    g.use();
+}
+
+void have_fun(const Gadget& cg)
+{
+    puts(__FUNCSIG__);
+    cg.use();
+}
+
+void have_fun(Gadget&& g)
+{
+    puts(__FUNCSIG__);
+    g.use();
+}
+
+// void use(Gadget& g)
+// {
+//     have_fun(g);
+// }
+
+// void use(const Gadget& g)
+// {
+//     have_fun(g);
+// }
+
+// void use(Gadget&& g)
+// {
+//     have_fun(std::move(g));
+// }
+
+namespace Explain
+{
+    template <typename T1, typename T2>
+    using IsLike = std::is_same<std::remove_cv_t<std::remove_reference_t<T1>>, T2>;
+
+    template <typename T1, typename T2>
+    constexpr bool IsLike_v = IsLike<T1, T2>::value;
+
+    template <typename TArg, typename = enable_if_t<IsLike_v<TArg, Gadget>>>
+    void use(TArg&& arg)
+    {
+        have_fun(std::forward<TArg>(arg));
+    }
+}
+
+template <typename TArg>
+void use(TArg&& arg)
+{
+    have_fun(std::forward<TArg>(arg));
+}
+
+TEST_CASE("using gadget")
+{
+    Gadget g {1, "g"};
+    const Gadget cg {2, "const g"};
+
+    use(g);
+    use(cg);
+    use(Gadget {3, "temp g"});
+}
+
+///////////////
+// reference collapsing
+
+template <typename T>
+void foo(T& arg)
+{
+    puts(__FUNCSIG__);
+}
+
+// TEST_CASE("ref collapsing")
+// {
+//     int x;
+//     foo<int&>(x);
+// }
+
+TEST_CASE("auto&&")
+{
+    int x = 10;
+
+    auto&& a1 = x; // int&
+
+    auto&& a2 = 10; // int&&
 }
