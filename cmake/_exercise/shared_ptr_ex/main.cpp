@@ -4,6 +4,8 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <list>
+#include <algorithm>
 
 class Observer
 {
@@ -15,21 +17,21 @@ public:
 class Subject
 {
     int state_;
-    std::set<Observer*> observers_;
+    std::set<std::weak_ptr<Observer>, std::owner_less<std::weak_ptr<Observer>>> observers_;
 
 public:
     Subject() : state_(0)
     {
     }
 
-    void register_observer(Observer* observer)
+    void register_observer(std::weak_ptr<Observer> observer)
     {
-        observers_.insert(observer);
+        observers_.insert(std::move(observer));
     }
 
-    void unregister_observer(Observer* observer)
+    void unregister_observer(std::weak_ptr<Observer> observer)
     {
-        observers_.erase(observer);
+        observers_.erase(std::move(observer));
     }
 
     void set_state(int new_state)
@@ -44,19 +46,34 @@ public:
 protected:
     void notify(const std::string& event_args)
     {
-        for (Observer* observer : observers_)
+        auto it = begin(observers_);
+        for(auto it = begin(observers_); it != end(observers_);)
         {
-            observer->update(event_args);
+            if (auto target = it->lock())
+            {
+                target->update(event_args);
+                ++it;
+            }
+            else
+            {
+                it = observers_.erase(it);
+            }
         }
     }
 };
 
-class ConcreteObserver1 : public Observer
+class ConcreteObserver1 
+    : public Observer, public std::enable_shared_from_this<ConcreteObserver1>
 {
 public:
     virtual void update(const std::string& event)
     {
         std::cout << "ConcreteObserver1: " << event << std::endl;
+    }
+
+    void register_me(Subject& s)
+    {
+        s.register_observer(shared_from_this());
     }
 };
 
@@ -67,6 +84,11 @@ public:
     {
         std::cout << "ConcreteObserver2: " << event << std::endl;
     }
+
+    void extra_stuff()
+    {
+        std::cout << "ConcreteObserver2::extra_stuff()\n";
+    }
 };
 
 int main(int argc, char const* argv[])
@@ -75,16 +97,17 @@ int main(int argc, char const* argv[])
 
     Subject s;
 
-    ConcreteObserver1* o1 = new ConcreteObserver1;
-    s.register_observer(o1);
+    auto o1 = make_shared<ConcreteObserver1>();
+    o1->register_me(s);
 
     {
-        ConcreteObserver2* o2 = new ConcreteObserver2;
+        std::shared_ptr<Observer> o2 = make_shared<ConcreteObserver2>();
         s.register_observer(o2);
 
-        s.set_state(1);
+        if (auto temp = std::dynamic_pointer_cast<ConcreteObserver2>(o2))
+            temp->extra_stuff();
 
-        delete o2;
+        s.set_state(1);
 
         cout << "End of scope." << endl;
     }
