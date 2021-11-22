@@ -13,6 +13,30 @@ string full_name(const string& first_name, const string& last_name)
     return first_name + " " + last_name;
 }
 
+TEST_CASE("reference binding")
+{
+    string name = "jan";
+
+    SECTION("C++98")
+    {
+        string& ref_name = name;
+
+        const string& ref_full_name = full_name(name, "kowalski");
+    }
+
+    SECTION("C++11")
+    {
+        full_name(name, "kowalski");
+
+        string&& ref_full_name = full_name(name, "kowalski");
+        ref_full_name[0] = 'p';
+
+        std::cout << ref_full_name << "\n";
+
+        // string&& ref_name = name; // ERROR - cannot bind lvalue to rvalue ref
+    }
+}
+
 namespace Explain
 {
     template <typename T>
@@ -44,29 +68,6 @@ TEST_CASE("using push_back")
     vec.push_back(std::move(word));
 }
 
-TEST_CASE("reference binding")
-{
-    string name = "jan";
-
-    SECTION("C++98")
-    {
-        string& ref_name = name;
-
-        const string& ref_full_name = full_name(name, "kowalski");
-    }
-
-    SECTION("C++11")
-    {
-        full_name(name, "kowalski");
-
-        string&& ref_full_name = full_name(name, "kowalski");
-        ref_full_name[0] = 'p';
-
-        std::cout << ref_full_name << "\n";
-
-        // string&& ref_name = name; // ERROR - cannot bind lvalue to rvalue ref
-    }
-}
 
 ////////////////////////////////////////////////
 // simplified implementation of unique_ptr - only moveable type
@@ -205,7 +206,7 @@ TEST_CASE("move semantics - UniquePtr")
     use_and_destroy(create_gadget());
 }
 
-////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 // DataSet - class with copy & move semantics (user provided implementation)
 
 class DataSet
