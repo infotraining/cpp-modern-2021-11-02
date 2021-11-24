@@ -267,7 +267,7 @@ struct Array
 
 TEST_CASE("using Array")
 {
-    Array<int, 5> arr1{1, 2, 3, 4, 5};
+    Array<int, 5> arr1 {1, 2, 3, 4, 5};
 
     REQUIRE(arr1.size() == 5);
 
@@ -410,7 +410,9 @@ TEST_CASE("sum")
 // variadic templates
 
 template <typename... Ts>
-class TypeList {};
+class TypeList
+{
+};
 
 template <typename... Ts>
 struct Row
@@ -423,5 +425,126 @@ TEST_CASE("variadic templates")
     TypeList<int, double, void, std::string> tl1;
     TypeList<> tl2;
 
-    Row<int, std::string, double> r1{{1,"text", 3.14}};
+    Row<int, std::string, double> r1 {{1, "text", 3.14}};
+}
+
+void print()
+{
+    std::cout << "\n";
+}
+
+template <typename THead, typename... TTail>
+void print(const THead& head, const TTail&... tail)
+{
+    std::cout << head << " ";
+    print(tail...);
+}
+
+namespace SinceCpp17
+{
+    template <typename THead, typename... TTail>
+    void print(const THead& head, const TTail&... tail)
+    {
+        std::cout << head << " ";
+
+        if constexpr(sizeof...(tail) > 0)
+            print(tail...);
+        else
+            std::cout << "\n";
+    }
+}
+
+TEST_CASE("head-tail print")
+{
+    print(1, 3.14, "text"s, "abc");
+    SinceCpp17::print("pi", 3.14);
+}
+
+template <typename T>
+auto sum(const T& value)
+{
+    return value;
+}
+
+ template <typename THead, typename... TTail>
+ auto sum(const THead& head, const TTail&... tail)
+ {
+     return head + sum(tail...);
+ }
+
+namespace FoldExpressions
+{
+    template <typename... TArgs>
+    struct TypesAreTheSame;
+
+
+    template <typename THead, typename... TTail>
+    struct TypesAreTheSame<THead, TTail...>
+    {
+        constexpr static bool value = (... && std::is_same_v<THead, TTail>);
+    };
+
+    template <typename... TArgs>
+    constexpr static bool TypesAreTheSame_v = TypesAreTheSame<TArgs...>::value;
+
+    template <typename... TArgs>
+    auto sum(const TArgs&...  args)  // sum(1, 2, 3, 4)
+    {
+        static_assert(TypesAreTheSame_v<TArgs...>);
+
+        return (... + args); // left-fold -> (((1 + 2) + 3 ) + 4 )
+    }
+
+    template <typename... TArgs>
+    auto sum_right(const TArgs&...  args)  // sum(1, 2, 3, 4)
+    {
+        return (args + ...); // right-fold -> (((4 + 3) + 2 ) + 1)
+    }
+
+    template <typename F, typename... TArgs>
+    auto map_reduce(F&& f, const TArgs&...  args)  // map_reduce(f, 1, 2, 3, 4)
+    {
+        return (... + f(args)); // left-fold -> (((f(1) + f(2)) + f(3)) + f(4) )
+    }
+
+    template <typename... TArgs>
+    void print(const TArgs&... args)
+    {
+        bool first_character = true;
+        auto with_space = [&first_character](const auto& item) {
+            if (!first_character)
+                std::cout << " ";
+            else
+                first_character = false;
+            return item; 
+        };
+
+        (std::cout << ... << with_space(args)) << "\n";
+    }
+
+    template <typename... TArgs>
+    bool all_true(TArgs... args)
+    {
+        return (... && args);
+    }
+
+    template <typename... TArgs>
+    void print_lines(const TArgs&... args)
+    {
+        (..., (std::cout << args << "\n")); // comma-operator with left-fold expression
+    }
+}
+
+TEST_CASE("head-tail sum")
+{
+    REQUIRE(FoldExpressions::sum(1, 2, 3, 4, 5) == 15);
+
+    REQUIRE(FoldExpressions::map_reduce([](int x) { return x * x; }, 1, 2, 3) == 14);
+
+    FoldExpressions::print(1, 3.14, "text");
+
+    REQUIRE(FoldExpressions::all_true(true, true, 1));
+    REQUIRE(FoldExpressions::all_true());
+
+    FoldExpressions::print_lines(1, 2, "abc", "def"s);
 }
