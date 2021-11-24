@@ -74,6 +74,7 @@ protected:
     {
         return static_cast<const T*>(this)->tied() < other.tied();
     }
+
 public:
     bool operator==(const T& other) const
     {
@@ -106,6 +107,13 @@ public:
     }
 };
 
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v)
+{
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 struct Person : Comparable<Person> // provides operators: ==, !=, <, >, <=, >=
 {
     std::string fname;
@@ -123,6 +131,21 @@ struct Person : Comparable<Person> // provides operators: ==, !=, <, >, <=, >=
     {
         return std::tie(lname, fname, age);
     }
+
+    size_t hashed() const
+    {
+        size_t seed = 0;
+        
+        hash_combine(seed, fname);
+        hash_combine(seed, lname);
+        hash_combine(seed, age);
+
+        // see below
+        // tuple_apply([&](const auto& item)
+        //     { hash_combine(seed, item) },
+        //     tied());
+        return seed;
+    }
 };
 
 TEST_CASE("using tuples to compare objects")
@@ -136,4 +159,66 @@ TEST_CASE("using tuples to compare objects")
     REQUIRE(p1 < p2);
 
     auto [first_name, last_name, age] = p1.tied();
+}
+
+template <typename... TArgs>
+struct Row
+{
+    std::tuple<TArgs...> data;
+
+    template <size_t... Indexes>
+    auto select()
+    {
+        return std::tuple {std::get<Indexes>(data)...};
+    }
+};
+
+TEST_CASE("index sequence")
+{
+    Row<int, double, float, std::string> datarow {{1, 3.14, 2.71f, "abc"}};
+
+    REQUIRE(datarow.select<0, 2, 3>() == std::tuple {1, 2.71f, "abc"s});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// nested parameter packs
+template <typename... Args1>
+struct Zip
+{
+    template <typename... Args2>
+    struct With
+    {
+        using type = tuple<pair<Args1, Args2>...>;
+    };
+};
+
+TEST_CASE("zipping")
+{
+    Zip<int, double, char>::With<string, int, double>::type zipped;
+    get<0>(zipped) = make_pair(1, "Hello");
+    get<1>(zipped) = make_pair(3.14, 5);
+    get<2>(zipped) = make_pair('s', 5.55);
+}
+
+template <typename F, typename T, size_t... Is>
+void tuple_apply_impl(F&& f, const T& t, std::index_sequence<Is...>)
+{
+    (..., f(std::get<Is>(t))); // fold expression - operator ,
+}
+
+template <typename F, typename... Ts>
+void tuple_apply(F&& f, const std::tuple<Ts...>& t)
+{
+    using Indexes = std::make_index_sequence<sizeof...(Ts)>;
+    tuple_apply_impl(f, t, Indexes {});
+}
+
+TEST_CASE("foreach for tuple")
+{
+    auto printer = [](const auto& item)
+    { std::cout << "value: " << item << "\n"; };
+
+    auto tpl = tuple {1, 3.14, "text"};
+
+    tuple_apply(printer, tpl);
 }
