@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <optional>
+#include <list>
+#include <array>
 
 using namespace std;
 
@@ -265,9 +268,12 @@ struct Array
     }
 };
 
+template<typename THead, typename... TArgs>
+Array(THead, TArgs...) -> Array<THead, sizeof...(TArgs) + 1>;
+
 TEST_CASE("using Array")
 {
-    Array<int, 5> arr1 {1, 2, 3, 4, 5};
+    Array arr1 {1, 2, 3, 4, 5};
 
     REQUIRE(arr1.size() == 5);
 
@@ -547,4 +553,90 @@ TEST_CASE("head-tail sum")
     REQUIRE(FoldExpressions::all_true());
 
     FoldExpressions::print_lines(1, 2, "abc", "def"s);
+}
+
+template <typename T1, typename T2>
+struct ValuePair
+{
+    T1 fst;
+    T2 snd;
+
+    ValuePair(const T1& f, const T2& s) : fst{f}, snd{s}
+    {}
+};
+
+// deduction guide
+template <typename T1, typename T2>
+ValuePair(T1, T2) -> ValuePair<T1, T2>;
+
+/////////////////////////////////////////////////////////////////////////
+// CTAD - class template argument deduction
+
+TEST_CASE("CTAD")
+{
+    std::pair<int, double> p1{1, 3.14};
+    std::pair<int, std::string> p2{4, "four"s};
+    auto p3 = std::make_pair(6, "six"s);
+    auto p4 = std::pair(6, "six"s);
+
+    ValuePair<int, std::string> vp1{1, "one"s};
+    ValuePair vp2{7, "seven"s}; // CTAD
+
+    int tab[5] = {1, 2, 3, 4, 5};
+    ValuePair vp3{"array", tab}; // ValuePair<const char*, int*>
+
+    const int x1 = 10;
+    double d1 = 3.14;
+
+    const int& rx1 = x1;
+    double& rd2 = d1;
+
+    ValuePair vp4{rx1, rd2}; // ValuePair<int, double>
+
+    std::vector vec{1, 2, 3, 4}; // CTAD
+
+    std::vector other_vec{vec}; // std::vector<int>
+    std::vector another_vec{vec, vec}; // std::vector<std::vector<int>>
+
+    std::tuple tp1{1, "one", 3.14}; // std::tuple<int, cons char*, double>
+    std::tuple tp2{tp1}; // CTAD special copy case - std::tuple<int, cons char*, double>
+}
+
+template <typename T1, typename T2>
+struct Aggregate
+{
+    T1 item1;
+    T2 item2;
+};
+
+template <typename T1, typename T2>
+Aggregate(T1, T2) -> Aggregate<T1, T2>;
+
+TEST_CASE("CTAD for aggregates")
+{
+    Aggregate agg1{1, 3.14};
+}
+
+int foo(int x) { return x * 42; }
+
+TEST_CASE("CTAD in std library")
+{
+    std::pair p1{1, "one"s}; // std::pair<int, std::string>
+
+    std::tuple t1{1, "one", 3.14}; // std::tuple<int, const char*, double>
+
+    std::optional i1 = 42; // std::optional<int>
+    std::optional i2(i1); // std::optional<int>
+
+    auto sp = std::make_shared<std::string>("text");
+    std::weak_ptr wp = sp;
+
+    std::function f = foo;
+
+    std::vector vec = {1, 2, 3};
+    REQUIRE(vec == std::vector{1, 2, 3});
+
+    std::list lst(begin(vec), end(vec));
+
+    std::array arr = {1, 2, 3, 4, 5, 6};
 }

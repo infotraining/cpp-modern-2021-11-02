@@ -161,15 +161,18 @@ TEST_CASE("using tuples to compare objects")
     auto [first_name, last_name, age] = p1.tied();
 }
 
+///////////////////////////////////////
+// index sequence
+
 template <typename... TArgs>
 struct Row
 {
     std::tuple<TArgs...> data;
 
-    template <size_t... Indexes>
+    template <size_t... Indices>
     auto select()
     {
-        return std::tuple {std::get<Indexes>(data)...};
+        return std::tuple {std::get<Indices>(data)...};
     }
 };
 
@@ -200,6 +203,9 @@ TEST_CASE("zipping")
     get<2>(zipped) = make_pair('s', 5.55);
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// tuple_apply - foreach for tuple
+
 template <typename F, typename T, size_t... Is>
 void tuple_apply_impl(F&& f, const T& t, std::index_sequence<Is...>)
 {
@@ -209,8 +215,8 @@ void tuple_apply_impl(F&& f, const T& t, std::index_sequence<Is...>)
 template <typename F, typename... Ts>
 void tuple_apply(F&& f, const std::tuple<Ts...>& t)
 {
-    using Indexes = std::make_index_sequence<sizeof...(Ts)>;
-    tuple_apply_impl(f, t, Indexes {});
+    using Indices = std::make_index_sequence<sizeof...(Ts)>;
+    tuple_apply_impl(f, t, Indices {});
 }
 
 TEST_CASE("foreach for tuple")
